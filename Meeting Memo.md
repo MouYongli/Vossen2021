@@ -1,8 +1,30 @@
-# Meeting Memo
+# 会议记录
 
-## 2021.02.04
+## 2021年2月4日星期四
 
-Participants: Yongli Mou ，Quan Liu
+- 参与人员：牟永利，李斐斐，张泽宇，刘泉
+
+- 会议内容
+  - 进度管理
+    - 已完成
+      - GAP数据库图片的收集与识别
+      - 建立Github共享文件
+    - TODO
+      - 基于GAP数据库完成模型训练和测试，给出初步结果报告
+      - 收集路面检测视频片段
+  - 团队管理
+    - 明确每两周开一次会议（bi-weekly meeting）
+    - 强调成果转化
+
+- 会议计划
+
+  - 会议时间：2021年2月20日星期六下午3点
+
+  - 会议形式：[Zoom Meeting](https://rwth.zoom.us/j/93868590377?pwd=SFdITWpIbWUrWWQwcjlkWFFXcTN2QT09)
+
+    Meeting ID: 938 6859 0377
+
+    Passcode: 211719
 
 Thanks Mou for your tutorial！！
 
