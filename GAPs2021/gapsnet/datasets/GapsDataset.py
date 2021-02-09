@@ -43,6 +43,7 @@ class GapsDataset(Dataset):
         lbl_file_path = os.path.join(self.label_dir,  self.data_df['lbl_file'][idx])
         image = cv2.imread(img_file_path, cv2.IMREAD_GRAYSCALE)
         label = cv2.imread(lbl_file_path, cv2.IMREAD_GRAYSCALE)
+        image, label = image[..., np.newaxis], label[..., np.newaxis]
         sample = {'image': image, 'label': label}
         if self.transform:
             sample = self.transform(sample)
@@ -52,6 +53,7 @@ if __name__ == '__main__':
     dataset = GapsDataset()
     sample = dataset[0]
     img, lbl = sample['image'], sample['label']
+    img, lbl = img[:,:,0], lbl[:,:,0]
     print(img.shape)
     print(lbl.shape)
     plt.figure()

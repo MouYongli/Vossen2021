@@ -12,5 +12,11 @@ def print_hi(name):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print_hi('PyCharm')
+    from gapsnet.models import VGG16, FCN32s
+    vgg16 = VGG16(pretrained=True)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    model = FCN32s()
+    model.copy_params_from_vgg16(vgg16)
+    for key in model.state_dict().keys():
+        print(key)
+
