@@ -24,13 +24,10 @@ def get_upsampling_weight(in_channels, out_channels, kernel_size):
 
 class FCN32s(nn.Module):
 
-    pretrained_model = \
-        osp.expanduser('~/data/models/pytorch/fcn32s_from_caffe.pth')
-
     def __init__(self, n_class=21):
         super(FCN32s, self).__init__()
         # conv1
-        self.conv1_1 = nn.Conv2d(3, 64, 3, padding=100)
+        self.conv1_1 = nn.Conv2d(1, 64, 3, padding=100)
         self.relu1_1 = nn.ReLU(inplace=True)
         self.conv1_2 = nn.Conv2d(64, 64, 3, padding=1)
         self.relu1_2 = nn.ReLU(inplace=True)
@@ -158,10 +155,9 @@ class FCN32s(nn.Module):
         ]
         for l1, l2 in zip(vgg16.features, features):
             if isinstance(l1, nn.Conv2d) and isinstance(l2, nn.Conv2d):
-                assert l1.weight.size() == l2.weight.size()
-                assert l1.bias.size() == l2.bias.size()
-                l2.weight.data = l1.weight.data
-                l2.bias.data = l1.bias.data
+                if l1.weight.size() == l2.weight.size() and l1.bias.size() == l2.bias.size():
+                    l2.weight.data = l1.weight.data
+                    l2.bias.data = l1.bias.data
         for i, name in zip([0, 3], ['fc6', 'fc7']):
             l1 = vgg16.classifier[i]
             l2 = getattr(self, name)

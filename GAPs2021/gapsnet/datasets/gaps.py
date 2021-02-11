@@ -1,28 +1,36 @@
 import os
 import os.path as osp
-import torch
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from torch.utils.data import Dataset, DataLoader
+import torch
+from torch.utils.data import Dataset
 
 import cv2
 
 class GapsDataset(Dataset):
     """GAPs dataset."""
-
-    def __init__(self, root_dir=None, split='train', transform=None):
+    class_names = np.array([
+        'VOID',
+        'intact road',
+        'applied patch',
+        'pothole',
+        'inlaid patch',
+        'open joint',
+        'crack',
+        'street inventory'
+    ])
+    def __init__(self, root_dir=None, split='train', transform=True):
         """
         Args:
             root_dir (string): Directory with all the images.
-            split (string): Split of dataset [ train | valid | valid-test]
+            split (string): Split of dataset [ train | valid | test]
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
         if root_dir is not None:
             self.root_dir = root_dir
         else:
-            pwd = os.getcwd()
+            pwd = osp.dirname(osp.abspath(__file__))
             self.root_dir = osp.join(pwd, '../../data')
         self.split = split
         self.transform = transform
@@ -43,19 +51,38 @@ class GapsDataset(Dataset):
         lbl_file_path = os.path.join(self.label_dir,  self.data_df['lbl_file'][idx])
         image = cv2.imread(img_file_path, cv2.IMREAD_GRAYSCALE)
         label = cv2.imread(lbl_file_path, cv2.IMREAD_GRAYSCALE)
-        image, label = image[..., np.newaxis], label[..., np.newaxis]
-        sample = {'image': image, 'label': label}
+        image = cv2.resize(image, (256, 256))
+        label = cv2.resize(label, (256, 256))
+
+        image = image[..., np.newaxis]
         if self.transform:
-            sample = self.transform(sample)
-        return sample
+            image, label = self.transforms(image, label)
+        return image, label
+
+    def transforms(self, img, lbl):
+        img = img.astype(np.float64)
+        img /= 255.0
+        img = img.transpose(2, 0, 1)
+        img = torch.from_numpy(img).float()
+        lbl = torch.from_numpy(lbl).long()
+        return img, lbl
+
+    def untransforms(self, img, lbl):
+        img = img.numpy()
+        img = img.transpose(1, 2, 0)
+        img *= 255.0
+        img = img.astype(np.uint8)
+        lbl = lbl.numpy()
+        return img, lbl
+
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     dataset = GapsDataset()
-    sample = dataset[0]
-    img, lbl = sample['image'], sample['label']
-    img, lbl = img[:,:,0], lbl[:,:,0]
-    print(img.shape)
-    print(lbl.shape)
+    imgs, lbls = dataset[0]
+    print(imgs.shape)
+    print(lbls.shape)
+    img, lbl = imgs[0,:,:], lbls
     plt.figure()
     plt.subplot(121)
     plt.imshow(img)
