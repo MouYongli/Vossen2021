@@ -19,16 +19,13 @@ def main():
     )
     parser.add_argument('--resume', help='checkpoint path')
     parser.add_argument(
-        '--max-iteration', type=int, default=100000, help='max iteration'
-    )
-    parser.add_argument(
-        '--epochs', type=int, default=200, help='max epochs'
+        '--epochs', type=int, default=80, help='max epochs'
     )
     parser.add_argument(
         '--lr', type=float, default=1.0e-4, help='learning rate',
     )
     parser.add_argument(
-        '--batch-size', type=int, default=2, help='batch size',
+        '--batch-size', type=int, default=16, help='batch size',
     )
     parser.add_argument(
         '--weight-decay', type=float, default=0.0005, help='weight decay',
@@ -72,7 +69,6 @@ def main():
         model = model.cuda()
 
     # 3. optimizer
-
     optim = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     if args.resume:
         optim.load_state_dict(checkpoint['optim_state_dict'])
@@ -84,9 +80,7 @@ def main():
         train_loader=train_loader,
         val_loader=val_loader,
         out=args.out,
-        max_iter=args.max_iteration,
         epochs=args.epochs,
-        interval_validate=4000,
     )
     trainer.epoch = start_epoch
     trainer.iteration = start_iteration

@@ -130,6 +130,7 @@ class FCN32s(nn.Module):
 
         h = self.upscore(h)
         h = h[:, :, 19:19 + x.size()[2], 19:19 + x.size()[3]].contiguous()
+
         return h
 
     def copy_params_from_vgg16(self, vgg16):

@@ -56,33 +56,24 @@ def cross_entropy2d(input, target, weight=None, size_average=True):
         loss /= mask.data.sum()
     return loss
 
-
 class Trainer(object):
-
     def __init__(self, cuda, model, optimizer,
-                 train_loader, val_loader, out, max_iter, epochs,
+                 train_loader, val_loader, out, epochs,
                  size_average=False, interval_validate=None):
         self.cuda = cuda
-
         self.model = model
         self.optim = optimizer
-
         self.train_loader = train_loader
         self.val_loader = val_loader
-
-        self.timestamp_start = \
-            datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
+        self.timestamp_start = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
         self.size_average = size_average
-
         if interval_validate is None:
             self.interval_validate = len(self.train_loader)
         else:
             self.interval_validate = interval_validate
-
         self.out = out
         if not osp.exists(self.out):
             os.makedirs(self.out)
-
         self.train_log_headers = [
             'epoch',
             'iteration',
@@ -97,7 +88,6 @@ class Trainer(object):
         if not osp.exists(osp.join(self.out, 'train_log.csv')):
             with open(osp.join(self.out, 'train_log.csv'), 'w') as f:
                 f.write(','.join(self.train_log_headers) + '\n')
-
         self.valid_log_headers = [
             'epoch',
             'valid/loss',
@@ -111,13 +101,10 @@ class Trainer(object):
         if not osp.exists(osp.join(self.out, 'valid_log.csv')):
             with open(osp.join(self.out, 'valid_log.csv'), 'w') as f:
                 f.write(','.join(self.valid_log_headers) + '\n')
-
         self.epoch = 0
         self.iteration = 0
         self.epochs = epochs
-        self.max_iter = max_iter
         self.best_mean_iu = 0
-
     def validate(self):
         training = self.model.training
         self.model.eval()
@@ -133,13 +120,11 @@ class Trainer(object):
             data, target = Variable(data), Variable(target)
             with torch.no_grad():
                 score = self.model(data)
-
             loss = cross_entropy2d(score, target, size_average=self.size_average)
             loss_data = loss.data.item()
             if np.isnan(loss_data):
                 raise ValueError('loss is nan while validating')
             val_loss += loss_data / len(data)
-
             imgs = data.data.cpu()
             lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
             lbl_true = target.data.cpu()
@@ -152,7 +137,6 @@ class Trainer(object):
         acc, mean_precision, mean_recall, mean_iou, mean_f1 = label_accuracy_score(label_trues, label_preds, n_class)
         metrics = np.array([acc, mean_precision, mean_recall, mean_iou, mean_f1])
         val_loss /= len(self.val_loader)
-
         with open(osp.join(self.out, 'valid_log.csv'), 'a') as f:
             elapsed_time = (
                 datetime.datetime.now(pytz.timezone('Asia/Tokyo')) -
@@ -176,15 +160,12 @@ class Trainer(object):
         if is_best:
             shutil.copy(osp.join(self.out, 'checkpoint.pth.tar'),
                         osp.join(self.out, 'model_best.pth.tar'))
-
         if training:
             self.model.train()
 
     def train_epoch(self):
         self.model.train()
-
         n_class = len(self.train_loader.dataset.class_names)
-
         for batch_idx, (data, target) in tqdm.tqdm(
                 enumerate(self.train_loader), total=len(self.train_loader),
                 desc='Train epoch=%d' % self.epoch, ncols=80, leave=False):
@@ -192,12 +173,7 @@ class Trainer(object):
             if self.iteration != 0 and (iteration - 1) != self.iteration:
                 continue  # for resuming
             self.iteration = iteration
-
-            if self.iteration % self.interval_validate == 0:
-                self.validate()
-
             assert self.model.training
-
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             data, target = Variable(data), Variable(target)
@@ -210,14 +186,12 @@ class Trainer(object):
                 raise ValueError('loss is nan while training')
             loss.backward()
             self.optim.step()
-
             metrics = []
             lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
             lbl_true = target.data.cpu().numpy()
             acc, mean_precision, mean_recall, mean_iou, mean_f1 = label_accuracy_score(lbl_true, lbl_pred, n_class=n_class)
             metrics.append((acc, mean_precision, mean_recall, mean_iou, mean_f1))
             metrics = np.mean(metrics, axis=0)
-
             with open(osp.join(self.out, 'train_log.csv'), 'a') as f:
                 elapsed_time = (
                     datetime.datetime.now(pytz.timezone('Asia/Tokyo')) -
@@ -226,11 +200,8 @@ class Trainer(object):
                 log = map(str, log)
                 f.write(','.join(log) + '\n')
 
-            if self.iteration >= self.max_iter:
-                break
-
     def train(self):
-        max_epoch = max(self.epochs, int(math.ceil(1. * self.max_iter / len(self.train_loader))))
-        for epoch in tqdm.trange(self.epoch, max_epoch, desc='Train', ncols=80):
+        for epoch in tqdm.trange(self.epoch, self.epochs, desc='Train', ncols=80):
             self.epoch = epoch
+            self.validate()
             self.train_epoch()
