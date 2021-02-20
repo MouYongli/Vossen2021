@@ -38,4 +38,14 @@ Thanks Mou for your tutorial！！
     - Random Crop (选取crop中心点的位置时，根据是否为intact road改变被选中概率=>oversampling)
     - Normalization
     - Multi-view Training
-    - Framework change: Unet/ Resnet34+Unet/SimpleClassifier+Unet or other segmentation network.
+    - Framework change: Unet/ Resnet34+Unet/SimpleClassifier+Unet or other segmentation networ
+
+
+## 2021年2月20日星期六
+
+- 参与人员：牟永利，李斐斐，张泽宇，刘泉，王宠惠
+- 会议议程：
+   - 每人就各自方面进展交流
+   - 合作框架初步共识
+   - 明确下阶段每人的任务及预计成果
+
