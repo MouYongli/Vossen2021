@@ -28,3 +28,14 @@
 
 Thanks Mou for your tutorial！！
 
+## 2021年2月19日星期五
+
+- 参与人员：牟永利，李斐斐
+- 会议内容
+  - 代码修改建议
+    - Learning rate (Hyperparameter tuning)
+    - Loss function ([KL DivLoss](https://pytorch.org/docs/stable/generated/torch.nn.KLDivLoss.html), Circle Loss, Wasserstein Loss)
+    - Random Crop (选取crop中心点的位置时，根据是否为intact road改变被选中概率=>oversampling)
+    - Normalization
+    - Multi-view Training
+    - Framework change: Unet/ Resnet34+Unet/SimpleClassifier+Unet or other segmentation network.

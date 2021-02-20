@@ -49,12 +49,12 @@ class GapsDataset(Dataset):
     def __getitem__(self, idx):
         img_file_path = os.path.join(self.images_dir,  self.data_df['img_file'][idx])
         lbl_file_path = os.path.join(self.label_dir,  self.data_df['lbl_file'][idx])
-        image = cv2.imread(img_file_path, cv2.IMREAD_GRAYSCALE)
+        image = cv2.imread(img_file_path)
         label = cv2.imread(lbl_file_path, cv2.IMREAD_GRAYSCALE)
         image = cv2.resize(image, (256, 256))
         label = cv2.resize(label, (256, 256))
 
-        image = image[..., np.newaxis]
+        # image = image[..., np.newaxis]
         if self.transform:
             image, label = self.transforms(image, label)
         return image, label
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     imgs, lbls = dataset[0]
     print(imgs.shape)
     print(lbls.shape)
-    img, lbl = imgs[0,:,:], lbls
+    img, lbl = dataset.untransforms(imgs, lbls)
     plt.figure()
     plt.subplot(121)
     plt.imshow(img)
