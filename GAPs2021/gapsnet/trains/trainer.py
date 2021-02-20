@@ -39,88 +39,47 @@ def label_accuracy_score(label_trues, label_preds, n_class=8):
     return acc, mean_precision, mean_recall, mean_iou, mean_f1
 
 
-def cross_entropy2d(input, target, weight=None, size_average=True):
-    # input: (n, c, h, w), target: (n, h, w)
-    n, c, h, w = input.size()
-    # log_p: (n, c, h, w)
-    log_p = F.log_softmax(input, dim=1)
-    # log_p: (n*h*w, c)
-    log_p = log_p.transpose(1, 2).transpose(2, 3).contiguous()
-    log_p = log_p[target.view(n, h, w, 1).repeat(1, 1, 1, c) >= 0]
-    log_p = log_p.view(-1, c)
-    # target: (n*h*w,)
-    mask = target >= 0
-    target = target[mask]
-    loss = F.nll_loss(log_p, target, weight=weight, reduction='sum')
-    if size_average:
-        loss /= mask.data.sum()
-    return loss
 
 class Trainer(object):
-    def __init__(self, cuda, model, optimizer,
-                 train_loader, val_loader, out, epochs,
-                 size_average=False, interval_validate=None):
+    def __init__(self, cuda, model, optim, loss_fn, train_loader, val_loader, experiment_dir, epochs):
         self.cuda = cuda
         self.model = model
-        self.optim = optimizer
+        self.optim = optim
+        self.loss_fn = loss_fn
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.timestamp_start = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
-        self.size_average = size_average
-        if interval_validate is None:
-            self.interval_validate = len(self.train_loader)
-        else:
-            self.interval_validate = interval_validate
-        self.out = out
-        if not osp.exists(self.out):
-            os.makedirs(self.out)
-        self.train_log_headers = [
-            'epoch',
-            'iteration',
-            'train/loss',
-            'train/acc',
-            'train/precision',
-            'train/recall',
-            'train/iu',
-            'train/f1',
-            'elapsed_time',
-        ]
-        if not osp.exists(osp.join(self.out, 'train_log.csv')):
-            with open(osp.join(self.out, 'train_log.csv'), 'w') as f:
-                f.write(','.join(self.train_log_headers) + '\n')
-        self.valid_log_headers = [
-            'epoch',
-            'valid/loss',
-            'valid/acc',
-            'valid/precision',
-            'valid/recall',
-            'valid/iu',
-            'valid/f1',
-            'elapsed_time',
-        ]
-        if not osp.exists(osp.join(self.out, 'valid_log.csv')):
-            with open(osp.join(self.out, 'valid_log.csv'), 'w') as f:
-                f.write(','.join(self.valid_log_headers) + '\n')
+        self.experiment_dir = experiment_dir
+        if not osp.exists(osp.join(self.experiment_dir, 'train.csv')):
+            with open(osp.join(self.experiment_dir, 'train.csv'), 'w') as f:
+                train_log_headers = ['epoch', 'iteration', 'train/loss', 'train/acc', 'train/precision', 'train/recall', 'train/iu', 'train/f1', 'elapsed_time',]
+                f.write(','.join(train_log_headers) + '\n')
+        if not osp.exists(osp.join(self.experiment_dir, 'valid.csv')):
+            with open(osp.join(self.experiment_dir, 'valid.csv'), 'w') as f:
+                valid_log_headers = ['epoch', 'valid/loss', 'valid/acc', 'valid/precision', 'valid/recall', 'valid/iu',
+                                     'valid/f1', 'elapsed_time']
+                f.write(','.join(valid_log_headers) + '\n')
+        if not osp.exists(osp.join(self.experiment_dir, 'test.csv')):
+            with open(osp.join(self.experiment_dir, 'test.csv'), 'w') as f:
+                test_log_headers = ['loss', 'acc', 'precision', 'recall', 'iu', 'f1', 'elapsed_time']
+                f.write(','.join(test_log_headers) + '\n')
         self.epoch = 0
         self.iteration = 0
         self.epochs = epochs
         self.best_mean_iu = 0
+
     def validate(self):
-        training = self.model.training
         self.model.eval()
         n_class = len(self.val_loader.dataset.class_names)
         val_loss = 0
         label_trues, label_preds = [], []
-        for batch_idx, (data, target) in tqdm.tqdm(
-                enumerate(self.val_loader), total=len(self.val_loader),
-                desc='Valid iteration=%d' % self.iteration, ncols=80,
-                leave=False):
+        for batch_idx, (data, target) in tqdm.tqdm(enumerate(self.val_loader), total=len(self.val_loader), desc='Valid iteration=%d' % self.iteration, ncols=80, leave=False):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             data, target = Variable(data), Variable(target)
             with torch.no_grad():
                 score = self.model(data)
-            loss = cross_entropy2d(score, target, size_average=self.size_average)
+            loss = self.loss_fn(score, target, size_average=self.size_average)
             loss_data = loss.data.item()
             if np.isnan(loss_data):
                 raise ValueError('loss is nan while validating')
@@ -160,8 +119,6 @@ class Trainer(object):
         if is_best:
             shutil.copy(osp.join(self.out, 'checkpoint.pth.tar'),
                         osp.join(self.out, 'model_best.pth.tar'))
-        if training:
-            self.model.train()
 
     def train_epoch(self):
         self.model.train()
@@ -201,7 +158,7 @@ class Trainer(object):
                 f.write(','.join(log) + '\n')
 
     def train(self):
-        for epoch in tqdm.trange(self.epoch, self.epochs, desc='Train', ncols=80):
+        for epoch in tqdm.trange(self.epochs, desc='Train', ncols=80):
             self.epoch = epoch
             self.validate()
             self.train_epoch()
