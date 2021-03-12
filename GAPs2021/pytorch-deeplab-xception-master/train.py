@@ -9,6 +9,9 @@ from mypath import Path
 from dataloaders import make_data_loader
 from modeling.sync_batchnorm.replicate import patch_replication_callback
 from modeling.deeplab import *
+from modeling.unet import *
+from modeling.resunet import *
+from modeling.linknet import *
 from utils.loss import SegmentationLosses
 from utils.calculate_weights import calculate_weigths_labels
 from utils.lr_scheduler import LR_Scheduler
@@ -32,19 +35,40 @@ class Trainer(object):
         self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
 
         # Define network
-        model = DeepLab(num_classes=self.nclass,
-                        backbone=args.backbone,
-                        output_stride=args.out_stride,
-                        sync_bn=args.sync_bn,
-                        freeze_bn=args.freeze_bn)
-
-        train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},
+        if args.model == 'deeplab':
+            model = DeepLab(num_classes=self.nclass,
+                            backbone=args.backbone,
+                            output_stride=args.out_stride,
+                            sync_bn=args.sync_bn,
+                            freeze_bn=args.freeze_bn)
+            train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},
                         {'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
+        elif args.model == 'unet':
+            if args.backbone == 'vgg11':
+                model = UNet16(n_classes=self.nclass)
+                train_params = [{'params': model.parameters(), 'lr': args.lr}]
+            if args.backbone == 'vgg16':
+                model = UNet16(n_classes=self.nclass)
+                train_params = [{'params': model.parameters(), 'lr': args.lr}]
+            if args.backbone == 'resnet':
+                model = ResNetUNet(n_class=self.nclass)
+                train_params = [{'params': model.parameters(), 'lr': args.lr}]
+            else:
+                raise NotImplemented('Model {} with backbone {} is not implemented'.format(args.model, args.backbone))
+        elif args.model == 'linknet':
+            model = LinkNet(n_classes=self.nclass)
+            train_params = [{'params': model.parameters(), 'lr': args.lr}]
+        else:
+            raise NotImplemented('Model {} with backbone {} is not implemented'.format(args.model, args.backbone))
 
         # Define Optimizer
-        optimizer = torch.optim.SGD(train_params, momentum=args.momentum,
+        if args.optimizer == 'sgd':
+            optimizer = torch.optim.SGD(train_params, momentum=args.momentum,
                                     weight_decay=args.weight_decay, nesterov=args.nesterov)
-
+        elif args.optimizer == 'adam':
+            optimizer = torch.optim.Adam(train_params, weight_decay=args.weight_decay)
+        else:
+            raise NotImplemented('Optimizer {} is not implemented'.format(args.optimizer))
         # Define Criterion
         # whether to use class balanced weights
         if args.use_balanced_weights:
@@ -62,8 +86,10 @@ class Trainer(object):
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
         # Define lr scheduler
-        self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,
-                                            args.epochs, len(self.train_loader))
+        if self.use_lr_scheduler:
+            self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr, args.epochs, len(self.train_loader))
+        else:
+            self.scheduler = None
 
         # Using cuda
         if args.cuda:
@@ -101,7 +127,8 @@ class Trainer(object):
             image, target = sample['image'], sample['label']
             if self.args.cuda:
                 image, target = image.cuda(), target.cuda()
-            self.scheduler(self.optimizer, i, epoch, self.best_pred)
+            if self.scheduler is not None:
+                self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
             loss = self.criterion(output, target)
@@ -179,13 +206,19 @@ class Trainer(object):
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
+    parser.add_argument('--model', type=str, default='deeplab',
+                        choices=['deeplab', 'unet', 'linknet', 'resunet'],
+                        help='model name (default: resnet)')
     parser.add_argument('--backbone', type=str, default='resnet',
-                        choices=['resnet', 'xception', 'drn', 'mobilenet'],
+                        choices=['resnet', 'xception', 'drn', 'mobilenet', 'vgg11', 'vgg16'],
                         help='backbone name (default: resnet)')
+    parser.add_argument('--optimizer', type=str, default='sgd',
+                        choices=['sgd', 'adam'],
+                        help='optimizer (default: sgd)')
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='gaps',
-                        choices=['pascal', 'coco', 'cityscapes, gaps'],
+                        choices=['pascal', 'coco', 'cityscapes', 'gaps'],
                         help='dataset name (default: gaps)')
     parser.add_argument('--use-sbd', action='store_true', default=True,
                         help='whether to use SBD dataset (default: True)')
@@ -195,6 +228,9 @@ def main():
                         help='base image size')
     parser.add_argument('--crop-size', type=int, default=513,
                         help='crop image size')
+    parser.add_argument('--crop-strategy', type=str, default='rand',
+                        choices=['resize', 'rand', 'prob'],
+                        help='crop strategy (default: rand)')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
     parser.add_argument('--freeze-bn', type=bool, default=False,
@@ -214,6 +250,8 @@ def main():
     parser.add_argument('--use-balanced-weights', action='store_true', default=False,
                         help='whether to use balanced weights (default: False)')
     # optimizer params
+    parser.add_argument('--use-lr-scheduler', type=bool, default=False,
+                        help='whether to use lr-scheduler (default: False)')
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
                         help='learning rate (default: auto)')
     parser.add_argument('--lr-scheduler', type=str, default='poly',
@@ -294,7 +332,7 @@ def main():
 
 
     if args.checkname is None:
-        args.checkname = 'deeplab-'+str(args.backbone)
+        args.checkname = str(args.model)+str(args.backbone)+str(args.crop_stratigy)
     print(args)
     torch.manual_seed(args.seed)
     trainer = Trainer(args)

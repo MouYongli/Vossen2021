@@ -19,7 +19,7 @@ class GapsDataset(Dataset):
         'crack',
         'street inventory'
     ])
-    def __init__(self, args,split='train', root_dir=None, transform=True):
+    def __init__(self, args, split='train', root_dir=None, transform=True):
         """
         Args:
             root_dir (string): Directory with all the images.
@@ -52,10 +52,21 @@ class GapsDataset(Dataset):
         lbl_file_path = os.path.join(self.label_dir,  self.data_df['lbl_file'][idx])
         image = cv2.imread(img_file_path)
         label = cv2.imread(lbl_file_path, cv2.IMREAD_GRAYSCALE)
-        image = cv2.resize(image, (512, 512))
-        label = cv2.resize(label, (512, 512))
+        if self.split == 'train':
+            if self.args.crop_strategy == 'resize':
+                image = cv2.resize(image, (512, 512))
+                label = cv2.resize(label, (512, 512))
+            elif self.args.crop_strategy == 'rand':
+                x_cord =np.random.randint(256,1664)
+                y_cord =np.random.randint(256,824)
+                image = image[(x_cord-256):(x_cord+256), (y_cord-256):(y_cord+256)]
+                label = label[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
+                pass
+            elif self.args.crop_strategy == 'prob':
+                pass
+            else:
+                raise NotImplemented('Dataset crop strategy {} is not implemented'.format(self.args.crop_strategy))
 
-        # image = image[..., np.newaxis]
         if self.transform:
             image, label = self.transforms(image, label)
         return {'image': image, 'label': label}
@@ -78,14 +89,4 @@ class GapsDataset(Dataset):
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    dataset = GapsDataset(args=None)
-    sample = dataset[0]
-    img, lbl = sample['image'], sample['label']
-    img, lbl = dataset.untransforms(img, lbl)
-    plt.figure()
-    plt.subplot(121)
-    plt.imshow(img)
-    plt.subplot(122)
-    plt.imshow(lbl)
-    plt.show()
+    pass

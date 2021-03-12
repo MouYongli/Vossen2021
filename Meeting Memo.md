@@ -4,7 +4,7 @@
 
 - 参与人员：牟永利，李斐斐，张泽宇，刘泉
 
-- 会议内容
+- 会议议程
   - 进度管理
     - 已完成
       - GAP数据库图片的收集与识别
@@ -31,7 +31,7 @@ Thanks Mou for your tutorial！！
 ## 2021年2月19日星期五
 
 - 参与人员：牟永利，李斐斐
-- 会议内容
+- 会议议程
   - 代码修改建议
     - Learning rate (Hyperparameter tuning)
     - Loss function ([KL DivLoss](https://pytorch.org/docs/stable/generated/torch.nn.KLDivLoss.html), Circle Loss, Wasserstein Loss)
@@ -44,7 +44,7 @@ Thanks Mou for your tutorial！！
 ## 2021年2月20日星期六
 
 - 参与人员：牟永利，李斐斐，张泽宇，刘泉，王宠惠
-- 会议议程：
+- 会议议程
    - 进展交流
       - 刘泉 85%精度
       - 张泽宇 硬件分析
@@ -57,3 +57,9 @@ Thanks Mou for your tutorial！！
    - 合作框架初步共识，涉及到资金流分布
    - 明确下阶段每人的任务及预计成果
 
+## 2021年3月9日星期二
+
+- 参与人员：牟永利，李斐斐
+- 会议议程
+  - 明确深度学习框架 (PyTorch)
+  - 
