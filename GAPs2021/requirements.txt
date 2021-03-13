@@ -1,0 +1,9 @@
+pip install argparse
+pip install tqdm
+pip install torch
+pip install utils
+pip install pillow
+pip install torch vision
+pip install future
+
+
