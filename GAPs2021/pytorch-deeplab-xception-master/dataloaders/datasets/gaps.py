@@ -57,9 +57,9 @@ class GapsDataset(Dataset):
                 image = cv2.resize(image, (512, 512))
                 label = cv2.resize(label, (512, 512))
             elif self.args.crop_strategy == 'rand':
-                x_cord =np.random.randint(256,1664)
-                y_cord =np.random.randint(256,824)
-                image = image[(x_cord-256):(x_cord+256), (y_cord-256):(y_cord+256)]
+                x_cord =np.random.randint(256,824)
+                y_cord =np.random.randint(256,1664)
+                image = image[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
                 label = label[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
                 pass
             elif self.args.crop_strategy == 'prob':
@@ -89,4 +89,24 @@ class GapsDataset(Dataset):
 
 
 if __name__ == '__main__':
-    pass
+    import argparse
+
+    parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
+
+    parser.add_argument('--crop-strategy', type=str, default='rand',
+                        choices=['resize', 'rand', 'prob'],
+                        help='crop strategy (default: rand)')
+
+    args = parser.parse_args()
+    dataset = GapsDataset(args, split='train', root_dir=None, transform=True)
+    sample = dataset[0]
+    img, lbl = sample['image'], sample['label']
+    img, lbl = dataset.untransforms(img, lbl)
+    print(img.shape)
+    import matplotlib.pyplot as plt
+    plt.subplot(121)
+    plt.imshow(img)
+    plt.subplot(122)
+    plt.imshow(lbl)
+    plt.show()
+
