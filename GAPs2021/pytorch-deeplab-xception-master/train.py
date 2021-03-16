@@ -86,7 +86,7 @@ class Trainer(object):
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
         # Define lr scheduler
-        if self.use_lr_scheduler:
+        if self.args.use_lr_scheduler:
             self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr, args.epochs, len(self.train_loader))
         else:
             self.scheduler = None
@@ -161,6 +161,7 @@ class Trainer(object):
     def validation(self, epoch):
         self.model.eval()
         self.evaluator.reset()
+        self.saver.save_confusion_matrix_history(self.evaluator.confusion_matrix_history)
         tbar = tqdm(self.val_loader, desc='\r')
         test_loss = 0.0
         for i, sample in enumerate(tbar):
@@ -207,12 +208,12 @@ class Trainer(object):
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--model', type=str, default='deeplab',
-                        choices=['deeplab', 'unet', 'linknet', 'resunet'],
-                        help='model name (default: resnet)')
+                        choices=['deeplab', 'unet', 'linknet'],
+                        help='model name (default: deeplab)')
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet', 'vgg11', 'vgg16'],
                         help='backbone name (default: resnet)')
-    parser.add_argument('--optimizer', type=str, default='sgd',
+    parser.add_argument('--optimizer', type=str, default='adam',
                         choices=['sgd', 'adam'],
                         help='optimizer (default: sgd)')
     parser.add_argument('--out-stride', type=int, default=16,
@@ -305,7 +306,7 @@ def main():
             'coco': 30,
             'cityscapes': 200,
             'pascal': 50,
-            'gaps': 50
+            'gaps': 200
         }
         args.epochs = epoches[args.dataset.lower()]
 
@@ -314,7 +315,7 @@ def main():
             'coco': 16,
             'cityscapes': 16,
             'pascal': 16,
-            'gaps': 4
+            'gaps': 12
         }
         args.batch_size = batch_size[args.dataset.lower()]
 
@@ -330,9 +331,8 @@ def main():
         }
         args.lr = lrs[args.dataset.lower()] / (4 * len(args.gpu_ids)) * args.batch_size
 
-
     if args.checkname is None:
-        args.checkname = str(args.model)+str(args.backbone)+str(args.crop_stratigy)
+        args.checkname = str(args.model)+str(args.backbone)+str(args.crop_strategy)
     print(args)
     torch.manual_seed(args.seed)
     trainer = Trainer(args)
@@ -342,7 +342,6 @@ def main():
         trainer.training(epoch)
         if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
             trainer.validation(epoch)
-
     trainer.writer.close()
 
 if __name__ == "__main__":

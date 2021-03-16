@@ -1,0 +1,11 @@
+datset:gaps
+model:deeplab
+backbone:resnet
+out_stride:16
+lr:5e-05
+lr_scheduler:poly
+loss_type:ce
+epoch:200
+base_size:513
+crop_size:513
+crop_strategy:rand

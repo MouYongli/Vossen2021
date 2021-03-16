@@ -61,7 +61,6 @@ class GapsDataset(Dataset):
                 y_cord =np.random.randint(256,1664)
                 image = image[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
                 label = label[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
-                pass
             elif self.args.crop_strategy == 'prob':
                 pass
             else:

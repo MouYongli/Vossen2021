@@ -5,6 +5,7 @@ class Evaluator(object):
     def __init__(self, num_class):
         self.num_class = num_class
         self.confusion_matrix = np.zeros((self.num_class,)*2)
+        self.confusion_matrix_history = []
 
     def Pixel_Accuracy(self):
         Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
@@ -43,6 +44,7 @@ class Evaluator(object):
         self.confusion_matrix += self._generate_matrix(gt_image, pre_image)
 
     def reset(self):
+        self.confusion_matrix_history.append(self.confusion_matrix)
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
 
 

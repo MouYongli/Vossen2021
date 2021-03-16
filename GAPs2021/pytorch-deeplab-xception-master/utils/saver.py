@@ -3,12 +3,13 @@ import shutil
 import torch
 from collections import OrderedDict
 import glob
+import numpy as np
 
 class Saver(object):
 
     def __init__(self, args):
         self.args = args
-        self.directory = os.path.join('run', args.dataset, args.checkname)
+        self.directory = os.path.join('output', args.dataset, args.checkname)
         self.runs = sorted(glob.glob(os.path.join(self.directory, 'experiment_*')))
         run_id = int(self.runs[-1].split('_')[-1]) + 1 if self.runs else 0
         self.experiment_dir = os.path.join(self.directory, 'experiment_{}'.format(str(run_id)))
@@ -45,6 +46,7 @@ class Saver(object):
         log_file = open(logfile, 'w')
         p = OrderedDict()
         p['datset'] = self.args.dataset
+        p['model'] = self.args.model
         p['backbone'] = self.args.backbone
         p['out_stride'] = self.args.out_stride
         p['lr'] = self.args.lr
@@ -53,7 +55,13 @@ class Saver(object):
         p['epoch'] = self.args.epochs
         p['base_size'] = self.args.base_size
         p['crop_size'] = self.args.crop_size
+        p['crop_strategy'] = self.args.crop_strategy
 
         for key, val in p.items():
             log_file.write(key + ':' + str(val) + '\n')
         log_file.close()
+
+    def save_confusion_matrix_history(self, history):
+        history = np.array(history)
+        with open(os.path.join(self.experiment_dir, 'history.npy'), 'wb') as f:
+            np.save(f, history)
