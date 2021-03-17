@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from collections import Counter
 
 import cv2
 
@@ -52,6 +53,7 @@ class GapsDataset(Dataset):
         lbl_file_path = os.path.join(self.label_dir,  self.data_df['lbl_file'][idx])
         image = cv2.imread(img_file_path)
         label = cv2.imread(lbl_file_path, cv2.IMREAD_GRAYSCALE)
+        height, width = image.shape[0], image.shape[1]
         if self.split == 'train':
             if self.args.crop_strategy == 'resize':
                 image = cv2.resize(image, (512, 512))
@@ -61,8 +63,31 @@ class GapsDataset(Dataset):
                 y_cord =np.random.randint(256,1664)
                 image = image[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
                 label = label[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
-            elif self.args.crop_strategy == 'prob':
-                pass
+            elif self.args.crop_strategy == 'global-prob':
+                prob = np.array([9.053839e+04, 1.833789e+06, 7.457733e+03, 1.792296e+03, 4.969282e+03, 2.587876e+03,
+                                 5.355967e+04, 7.890600e+04])  # lbl_i表示的概率设置为prob_i
+                prob = 1. / np.log(prob)
+                ps = np.exp(prob[label[256:(height - 256), 256:(width - 256)]].reshape(-1))
+                ps /= np.sum(ps)
+                point = np.random.choice((width - 512) * (height - 512), 1, p=ps)
+                y_cord = (point[0] % (width - 512)) + 256
+                x_cord = (point[0] // (width - 512)) + 256
+                image = image[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
+                label = label[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
+            elif self.args.crop_strategy == 'local-prob':
+                res = dict(sum(map(Counter, label[256:(height - 256), 256:(width - 256)]), Counter()))
+                for i in range(8):
+                    if i not in res.keys():
+                        res[i] = 0
+                prob = np.array([res[i] for i in range(8)]) / ((width - 512) * (height - 512))
+                prob = 1. / np.exp(prob)
+                ps = np.exp(prob[label[256:(height - 256), 256:(width - 256)]].reshape(-1))
+                ps /= np.sum(ps)
+                point = np.random.choice((width - 512) * (height - 512), 1, p=ps)
+                y_cord = (point[0] % (width - 512)) + 256
+                x_cord = (point[0] // (width - 512)) + 256
+                image = image[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
+                label = label[(x_cord - 256):(x_cord + 256), (y_cord - 256):(y_cord + 256)]
             else:
                 raise NotImplemented('Dataset crop strategy {} is not implemented'.format(self.args.crop_strategy))
 
@@ -92,8 +117,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
 
-    parser.add_argument('--crop-strategy', type=str, default='rand',
-                        choices=['resize', 'rand', 'prob'],
+    parser.add_argument('--crop-strategy', type=str, default='local-prob',
+                        choices=['resize', 'rand', 'global-prob', 'local-prob'],
                         help='crop strategy (default: rand)')
 
     args = parser.parse_args()
