@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
 
-    parser.add_argument('--crop-strategy', type=str, default='local-prob',
+    parser.add_argument('--crop-strategy', type=str, default='resize',
                         choices=['resize', 'rand', 'global-prob', 'local-prob'],
                         help='crop strategy (default: rand)')
 

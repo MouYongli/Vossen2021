@@ -229,8 +229,8 @@ def main():
                         help='base image size')
     parser.add_argument('--crop-size', type=int, default=513,
                         help='crop image size')
-    parser.add_argument('--crop-strategy', type=str, default='rand',
-                        choices=['resize', 'rand', 'prob'],
+    parser.add_argument('--crop-strategy', type=str, default='local-prob',
+                        choices=['resize', 'rand', 'global-prob', 'local-prob'],
                         help='crop strategy (default: rand)')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
