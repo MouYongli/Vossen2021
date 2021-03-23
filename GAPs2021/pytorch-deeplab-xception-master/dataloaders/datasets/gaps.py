@@ -33,7 +33,7 @@ class GapsDataset(Dataset):
             self.root_dir = root_dir
         else:
             pwd = osp.dirname(osp.abspath(__file__))
-            self.root_dir = osp.join(pwd, '../../../data')
+            self.root_dir = osp.join(pwd, './data')
         self.split = split
         self.transform = transform
         basedir = os.path.join(self.root_dir, 'v2', 'segmentation')
@@ -54,6 +54,7 @@ class GapsDataset(Dataset):
         image = cv2.imread(img_file_path)
         label = cv2.imread(lbl_file_path, cv2.IMREAD_GRAYSCALE)
         height, width = image.shape[0], image.shape[1]
+
         if self.split == 'train':
             if self.args.crop_strategy == 'resize':
                 image = cv2.resize(image, (512, 512))
@@ -68,6 +69,7 @@ class GapsDataset(Dataset):
                                  5.355967e+04, 7.890600e+04])  # lbl_i表示的概率设置为prob_i
                 prob = 1. / np.log(prob)
                 ps = np.exp(prob[label[256:(height - 256), 256:(width - 256)]].reshape(-1))
+                ps[1] = 0.0
                 ps /= np.sum(ps)
                 point = np.random.choice((width - 512) * (height - 512), 1, p=ps)
                 y_cord = (point[0] % (width - 512)) + 256
@@ -82,6 +84,7 @@ class GapsDataset(Dataset):
                 prob = np.array([res[i] for i in range(8)]) / ((width - 512) * (height - 512))
                 prob = 1. / np.exp(prob)
                 ps = np.exp(prob[label[256:(height - 256), 256:(width - 256)]].reshape(-1))
+                ps[1] = 0.0
                 ps /= np.sum(ps)
                 point = np.random.choice((width - 512) * (height - 512), 1, p=ps)
                 y_cord = (point[0] % (width - 512)) + 256
@@ -116,7 +119,6 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
-
     parser.add_argument('--crop-strategy', type=str, default='resize',
                         choices=['resize', 'rand', 'global-prob', 'local-prob'],
                         help='crop strategy (default: rand)')

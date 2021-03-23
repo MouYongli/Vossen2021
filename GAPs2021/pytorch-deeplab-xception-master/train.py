@@ -332,7 +332,7 @@ def main():
         args.lr = lrs[args.dataset.lower()] / (4 * len(args.gpu_ids)) * args.batch_size
 
     if args.checkname is None:
-        args.checkname = str(args.model)+str(args.backbone)+str(args.crop_strategy)
+        args.checkname = str(args.model)+"_"+str(args.backbone)+"_"+str(args.crop_strategy)
     print(args)
     torch.manual_seed(args.seed)
     trainer = Trainer(args)
