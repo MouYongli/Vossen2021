@@ -227,6 +227,8 @@ def main():
                         metavar='N', help='dataloader threads')
     parser.add_argument('--base-size', type=int, default=513,
                         help='base image size')
+    parser.add_argument('--focus-on-minority', type=bool, default=True,
+                        help='training data focus on minority classes')
     parser.add_argument('--crop-size', type=int, default=513,
                         help='crop image size')
     parser.add_argument('--crop-strategy', type=str, default='local-prob',
@@ -332,7 +334,8 @@ def main():
         args.lr = lrs[args.dataset.lower()] / (4 * len(args.gpu_ids)) * args.batch_size
 
     if args.checkname is None:
-        args.checkname = str(args.model)+"_"+str(args.backbone)+"_"+str(args.crop_strategy)
+        is_minority = "minority" if args.focus_on_minority else "normal"
+        args.checkname = str(args.model)+"-"+str(args.backbone)+"/"+str(args.crop_strategy)+ "_" + is_minority
     print(args)
     torch.manual_seed(args.seed)
     trainer = Trainer(args)

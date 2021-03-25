@@ -3,9 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 __all__ = ['axial26s', 'axial50s', 'axial50m', 'axial50l']
-
 
 class qkv_transform(nn.Conv1d):
     """Conv1d for qkv_transform"""
@@ -13,7 +11,6 @@ class qkv_transform(nn.Conv1d):
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
-
 
 class AxialAttention(nn.Module):
     def __init__(self, in_planes, out_planes, groups=8, kernel_size=56,
@@ -234,7 +231,6 @@ class AxialAttentionNet(nn.Module):
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-
         return x
 
     def forward(self, x):
@@ -259,3 +255,9 @@ def axial50m(pretrained=False, **kwargs):
 def axial50l(pretrained=False, **kwargs):
     model = AxialAttentionNet(AxialBlock, [3, 4, 6, 3], s=1, **kwargs)
     return model
+
+if __name__ == '__main__':
+    model = axial50s(num_classes=8)
+    input = torch.rand(4, 3, 224, 224)
+    output = model(input)
+    print(output.size())

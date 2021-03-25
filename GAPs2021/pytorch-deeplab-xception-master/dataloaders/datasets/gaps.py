@@ -33,16 +33,19 @@ class GapsDataset(Dataset):
             self.root_dir = root_dir
         else:
             pwd = osp.dirname(osp.abspath(__file__))
-            self.root_dir = osp.join(pwd, './data')
+            self.root_dir = osp.join(pwd, '../../../data')
         self.split = split
         self.transform = transform
         basedir = os.path.join(self.root_dir, 'v2', 'segmentation')
         self.images_dir = os.path.join(basedir, 'images')
         self.label_dir = os.path.join(basedir, split)
-        list_label = os.listdir(self.label_dir)
-        self.data_df = pd.DataFrame(np.array([list_label, list_label]).T, columns=['id', 'lbl_file'])
-        self.data_df = self.data_df[self.data_df['id'].str.endswith('.png')]
-        self.data_df['id'] = self.data_df['lbl_file'].map(lambda x: x[:-4])
+        if self.args.focus_on_minority:
+            self.data_df = pd.read_csv(osp.join(self.root_dir, 'minority_data.csv'))
+        else:
+            list_label = os.listdir(self.label_dir)
+            self.data_df = pd.DataFrame(np.array([list_label, list_label]).T, columns=['id', 'lbl_file'])
+            self.data_df = self.data_df[self.data_df['id'].str.endswith('.png')]
+            self.data_df['id'] = self.data_df['lbl_file'].map(lambda x: x[:-4])
         self.data_df['img_file'] = self.data_df['id'].map(lambda x: "%s.jpg"%x)
 
     def __len__(self):
@@ -68,8 +71,8 @@ class GapsDataset(Dataset):
                 prob = np.array([9.053839e+04, 1.833789e+06, 7.457733e+03, 1.792296e+03, 4.969282e+03, 2.587876e+03,
                                  5.355967e+04, 7.890600e+04])  # lbl_i表示的概率设置为prob_i
                 prob = 1. / np.log(prob)
+                prob[1] = 0.0
                 ps = np.exp(prob[label[256:(height - 256), 256:(width - 256)]].reshape(-1))
-                ps[1] = 0.0
                 ps /= np.sum(ps)
                 point = np.random.choice((width - 512) * (height - 512), 1, p=ps)
                 y_cord = (point[0] % (width - 512)) + 256
@@ -83,8 +86,8 @@ class GapsDataset(Dataset):
                         res[i] = 0
                 prob = np.array([res[i] for i in range(8)]) / ((width - 512) * (height - 512))
                 prob = 1. / np.exp(prob)
+                prob[1] = 0.0
                 ps = np.exp(prob[label[256:(height - 256), 256:(width - 256)]].reshape(-1))
-                ps[1] = 0.0
                 ps /= np.sum(ps)
                 point = np.random.choice((width - 512) * (height - 512), 1, p=ps)
                 y_cord = (point[0] % (width - 512)) + 256
@@ -117,14 +120,15 @@ class GapsDataset(Dataset):
 
 if __name__ == '__main__':
     import argparse
-
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
-    parser.add_argument('--crop-strategy', type=str, default='resize',
+    parser.add_argument('--crop-strategy', type=str, default='local-prob',
                         choices=['resize', 'rand', 'global-prob', 'local-prob'],
                         help='crop strategy (default: rand)')
-
+    parser.add_argument('--focus-on-minority', type=bool, default=True,
+                        help='training data focus on minority classes')
     args = parser.parse_args()
     dataset = GapsDataset(args, split='train', root_dir=None, transform=True)
+    print(len(dataset))
     sample = dataset[0]
     img, lbl = sample['image'], sample['label']
     img, lbl = dataset.untransforms(img, lbl)
