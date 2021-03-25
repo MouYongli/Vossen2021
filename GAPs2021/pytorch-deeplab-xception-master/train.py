@@ -12,6 +12,7 @@ from modeling.deeplab import *
 from modeling.unet import *
 from modeling.resunet import *
 from modeling.linknet import *
+from modeling.medaxial import *
 from utils.loss import SegmentationLosses
 from utils.calculate_weights import calculate_weigths_labels
 from utils.lr_scheduler import LR_Scheduler
@@ -57,6 +58,9 @@ class Trainer(object):
                 raise NotImplemented('Model {} with backbone {} is not implemented'.format(args.model, args.backbone))
         elif args.model == 'linknet':
             model = LinkNet(n_classes=self.nclass)
+            train_params = [{'params': model.parameters(), 'lr': args.lr}]
+        elif args.model == 'mednet':
+            model = axialunet(num_classes=self.nclass, img_size=512)
             train_params = [{'params': model.parameters(), 'lr': args.lr}]
         else:
             raise NotImplemented('Model {} with backbone {} is not implemented'.format(args.model, args.backbone))
@@ -208,7 +212,7 @@ class Trainer(object):
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--model', type=str, default='deeplab',
-                        choices=['deeplab', 'unet', 'linknet'],
+                        choices=['deeplab', 'unet', 'linknet', 'mednet'],
                         help='model name (default: deeplab)')
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet', 'vgg11', 'vgg16'],
