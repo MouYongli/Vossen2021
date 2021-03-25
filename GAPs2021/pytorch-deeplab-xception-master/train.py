@@ -317,7 +317,7 @@ def main():
             'coco': 16,
             'cityscapes': 16,
             'pascal': 16,
-            'gaps': 12
+            'gaps': 8
         }
         args.batch_size = batch_size[args.dataset.lower()]
 

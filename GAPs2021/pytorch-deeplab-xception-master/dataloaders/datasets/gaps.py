@@ -39,7 +39,7 @@ class GapsDataset(Dataset):
         basedir = os.path.join(self.root_dir, 'v2', 'segmentation')
         self.images_dir = os.path.join(basedir, 'images')
         self.label_dir = os.path.join(basedir, split)
-        if self.args.focus_on_minority:
+        if self.split == 'train' and self.args.focus_on_minority:
             self.data_df = pd.read_csv(osp.join(self.root_dir, 'minority_data.csv'))
         else:
             list_label = os.listdir(self.label_dir)
