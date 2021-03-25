@@ -1,1 +1,0 @@
-{"entry":[{"fullUrl":"8ba38b77-21e3-4db6-bc1b-2db4f416ce48","request":{"method":"PUT","url":"ImagingStudy/isic"},"resource":{"id":"isic","name":"ISIC", "status":"available","resourceType":"ImagingStudy"}}],"id":"6e2a5fb9-8dc6-4da5-b849-ee06dfbdafeb","resourceType":"Bundle","type":"transaction"}
