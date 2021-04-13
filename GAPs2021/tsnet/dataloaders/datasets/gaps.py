@@ -56,6 +56,9 @@ class GapsDataset(Dataset):
         lbl_file_path = os.path.join(self.label_dir,  self.data_df['lbl_file'][idx])
         image = cv2.imread(img_file_path)
         label = cv2.imread(lbl_file_path, cv2.IMREAD_GRAYSCALE)
+        if self.args.merge_labels:
+            label_map = np.array([0,1,2,2,2,2,3,4])
+            label = label_map[label]
         height, width = image.shape[0], image.shape[1]
 
         if self.split == 'train':
@@ -117,21 +120,19 @@ class GapsDataset(Dataset):
         lbl = lbl.numpy()
         return img, lbl
 
-
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--crop-strategy', type=str, default='local-prob',
                         choices=['resize', 'rand', 'global-prob', 'local-prob'],
                         help='crop strategy (default: rand)')
-    parser.add_argument('--focus-on-minority', type=bool, default=True,
+    parser.add_argument('--focus-on-minority', type=bool, default=False,
                         help='training data focus on minority classes')
-    parser.add_argument('--merge-labels', type=bool, default=True,
-                        help='Merge labels (default: True)')
+    parser.add_argument('--merge-labels', type=bool, default=True, help='Merge labels (default: True)')
     args = parser.parse_args()
     dataset = GapsDataset(args, split='train', root_dir=None, transform=True)
     print(len(dataset))
-    sample = dataset[0]
+    sample = dataset[19]
     img, lbl = sample['image'], sample['label']
     img, lbl = dataset.untransforms(img, lbl)
     print(img.shape)

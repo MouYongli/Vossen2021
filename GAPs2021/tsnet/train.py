@@ -46,12 +46,12 @@ class Trainer(object):
                         {'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
         elif args.model == 'unet':
             if args.backbone == 'vgg11':
+                model = UNet11(n_classes=self.nclass)
+                train_params = [{'params': model.parameters(), 'lr': args.lr}]
+            elif args.backbone == 'vgg16':
                 model = UNet16(n_classes=self.nclass)
                 train_params = [{'params': model.parameters(), 'lr': args.lr}]
-            if args.backbone == 'vgg16':
-                model = UNet16(n_classes=self.nclass)
-                train_params = [{'params': model.parameters(), 'lr': args.lr}]
-            if args.backbone == 'resnet':
+            elif args.backbone == 'resnet':
                 model = ResNetUNet(n_class=self.nclass)
                 train_params = [{'params': model.parameters(), 'lr': args.lr}]
             else:
@@ -85,6 +85,7 @@ class Trainer(object):
         else:
             weight = None
         self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
+        self.bce = nn.BCELoss(reduction='mean')
         self.model, self.optimizer = model, optimizer
         
         # Define Evaluator
@@ -129,13 +130,25 @@ class Trainer(object):
         num_img_tr = len(self.train_loader)
         for i, sample in enumerate(tbar):
             image, target = sample['image'], sample['label']
+            bianry_target = torch.where(target == 1, torch.zeros(target.shape), torch.ones(target.shape))
             if self.args.cuda:
-                image, target = image.cuda(), target.cuda()
+                if self.args.model == "deeplab":
+                    image, target, bianry_target = image.cuda(), target.cuda(), bianry_target.cuda()
+                else:
+                    image, target = image.cuda(), target.cuda()
+
             if self.scheduler is not None:
                 self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
-            output = self.model(image)
-            loss = self.criterion(output, target)
+
+            if self.args.model == "deeplab":
+                bianry_output, output = self.model(image)
+                alpha = 0.75 if epoch < 100 else 0.25
+                loss = alpha * self.bce(torch.squeeze(bianry_output, dim=1), bianry_target) + (1-alpha) * self.criterion(output, target)
+            else:
+                output = self.model(image)
+                loss = self.criterion(output, target)
+
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
@@ -233,13 +246,13 @@ def main():
                         help='base image size')
     parser.add_argument('--focus-on-minority', type=bool, default=True,
                         help='training data focus on minority classes')
+    parser.add_argument('--merge-labels', type=bool, default=True,
+                        help='Merge labels (default: True)')
     parser.add_argument('--crop-size', type=int, default=513,
                         help='crop image size')
     parser.add_argument('--crop-strategy', type=str, default='local-prob',
                         choices=['resize', 'rand', 'global-prob', 'local-prob'],
                         help='crop strategy (default: rand)')
-    parser.add_argument('--merge-labels', type=bool, default=True,
-                        help='Merge labels (default: True)')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
     parser.add_argument('--freeze-bn', type=bool, default=False,
@@ -253,8 +266,7 @@ def main():
     parser.add_argument('--batch-size', type=int, default=None,
                         metavar='N', help='input batch size for \
                                 training (default: auto)')
-    parser.add_argument('--test-batch-size', type=int, default=None,
-                        metavar='N', help='input batch size for \
+    parser.add_argument('--test-batch-size', type=int, default=2, help='input batch size for \
                                 testing (default: auto)')
     parser.add_argument('--use-balanced-weights', action='store_true', default=False,
                         help='whether to use balanced weights (default: False)')
@@ -341,7 +353,8 @@ def main():
 
     if args.checkname is None:
         is_minority = "minority" if args.focus_on_minority else "normal"
-        args.checkname = str(args.model)+"-"+str(args.backbone)+"/"+str(args.crop_strategy)+ "_" + is_minority
+        merge_labels = "merge_labels" if args.merge_labels else ""
+        args.checkname = str(args.model)+"-"+str(args.backbone)+"/"+str(args.crop_strategy)+ "_" + is_minority + merge_labels
     print(args)
     torch.manual_seed(args.seed)
     trainer = Trainer(args)

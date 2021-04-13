@@ -2,6 +2,11 @@
 import sys
 sys.path.append('./')
 from .datasets import gaps
+# from datasets import pascal
+# from datasets import coco
+# from datasets import sbd
+# from datasets import combine_dbs
+# from datasets import cityscapes
 from torch.utils.data import DataLoader
 
 def make_data_loader(args, **kwargs):
@@ -59,11 +64,20 @@ if __name__ == '__main__':
                         help='dataset name (default: gaps)')
     parser.add_argument('--batch-size', type=int, default=16, help='input batch size for training (default: 16)')
     parser.add_argument('--test-batch-size', type=int, default=16, help='input batch size for testing (default: 16)')
+    parser.add_argument('--crop-strategy', type=str, default='local-prob',
+                        choices=['resize', 'rand', 'global-prob', 'local-prob'],
+                        help='crop strategy (default: rand)')
+    parser.add_argument('--focus-on-minority', type=bool, default=True,
+                        help='training data focus on minority classes')
     parser.add_argument('--merge-labels', type=bool, default=True,
                         help='Merge labels (default: True)')
     args = parser.parse_args()
     train, val, test, ncls = make_data_loader(args)
     train_it = iter(train)
-    imgs, lbls = next(train_it)
-    print(imgs[0, 0, 0:10, 0:10])
+    sample = next(train_it)
+    imgs, lbls = sample['image'], sample['label']
     print(ncls)
+    print(imgs.shape)
+    print(lbls.shape)
+    import matplotlib.pyplot as plt
+    # plt.imshow(imgs[])
