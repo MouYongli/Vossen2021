@@ -56,6 +56,9 @@ class GapsDataset(Dataset):
         lbl_file_path = os.path.join(self.label_dir,  self.data_df['lbl_file'][idx])
         image = cv2.imread(img_file_path)
         label = cv2.imread(lbl_file_path, cv2.IMREAD_GRAYSCALE)
+        if self.args.merge_labels:
+            label_map = np.array([0,1,2,2,2,2,3,4])
+            label = label_map[label]
         height, width = image.shape[0], image.shape[1]
 
         if self.split == 'train':

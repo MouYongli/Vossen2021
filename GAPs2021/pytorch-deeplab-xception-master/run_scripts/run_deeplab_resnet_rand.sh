@@ -6,7 +6,7 @@
 ### job run time
 #SBATCH --time=20:00:00
 ### declare the merged STDOUT/STDERR file
-#SBATCH --output=deeplab_resnet_rand.%J.txt
+#SBATCH --output=deeplab_resnet_rand_merge-labels.%J.txt
 ###
 #SBATCH --mail-type=ALL
 ###
@@ -22,4 +22,4 @@ module load python/3.6.8
 module load cuda/102
 module load cudnn/8.0.5
 
-python3 train.py --model deeplab --backbone resnet --crop-strategy rand
+python3 train.py --model deeplab --backbone resnet --crop-strategy rand --merge-labels True

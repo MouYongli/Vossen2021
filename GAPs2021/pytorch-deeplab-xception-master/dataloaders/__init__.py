@@ -43,7 +43,11 @@ def make_data_loader(args, **kwargs):
         train_set = gaps.GapsDataset(args, split='train')
         val_set = gaps.GapsDataset(args, split='valid-test')
         test_set = gaps.GapsDataset(args, split='test')
-        num_class = len(train_set.class_names)
+        # num_class = len(train_set.class_names)
+        if args.merge_labels:
+            num_class = 5
+        else:
+            num_class = 8
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, **kwargs)
         val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, **kwargs)
         test_loader = DataLoader(test_set, batch_size=args.test_batch_size, shuffle=False, **kwargs)
