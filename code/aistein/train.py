@@ -190,7 +190,7 @@ def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     # parameters for model
     parser.add_argument('--model', type=str, default='deeplab', choices=['deeplab', 'linknet', 'unet', 'fcn'], help='model name (default: deeplab)')
-    parser.add_argument('--backbone', type=str, default='resnet', choices=['resnet', 'xception', 'drn', 'mobilenet'],
+    parser.add_argument('--backbone', type=str, default='resnet', choices=['resnet', 'xception', 'drn', 'mobilenet', 'efficientnet]],
                         help='backbone name (default: resnet)')
     parser.add_argument('--out-stride', type=int, default=16, help='network output stride (default: 8)')
     parser.add_argument('--sync-bn', type=bool, default=None, help='whether to use sync bn (default: auto)')

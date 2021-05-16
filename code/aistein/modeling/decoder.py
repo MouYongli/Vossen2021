@@ -13,6 +13,8 @@ class Decoder(nn.Module):
             low_level_inplanes = 128
         elif backbone == 'mobilenet':
             low_level_inplanes = 24
+        elif backbone == 'efficientnet':
+            low_level_inplanes = 48
         else:
             raise NotImplementedError
         self.num_classes = num_classes

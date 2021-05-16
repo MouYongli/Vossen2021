@@ -7,7 +7,7 @@ from modeling.decoder import build_decoder
 from modeling.backbone import build_backbone
 
 class DeepLab(nn.Module):
-    def __init__(self, backbone='resnet', output_stride=16, num_classes=21, sync_bn=True, freeze_bn=False):
+    def __init__(self, backbone='efficientnet', output_stride=16, num_classes=21, sync_bn=True, freeze_bn=False):
         super(DeepLab, self).__init__()
         if backbone == 'drn':
             output_stride = 8
@@ -71,15 +71,15 @@ class DeepLab(nn.Module):
 
 if __name__ == "__main__":
     import torch.nn as nn
-    model = DeepLab(backbone='mobilenet', output_stride=16, num_classes=2)
+    model = DeepLab(backbone='efficientnet', output_stride=16, num_classes=2)
     model.eval()
     softmax = nn.Softmax()
     x = torch.rand(4, 3, 512, 512)
     t = torch.randint(0,1,(4,512,512)).float()
     print(model(x).shape)
 
-    y = torch.squeeze(model(x), dim=1)
-    criterion = nn.BCELoss()
-    print(criterion(y, t))
+    # y = torch.squeeze(model(x), dim=1)
+    # criterion = nn.BCELoss()
+    # print(criterion(y, t))
 
 
